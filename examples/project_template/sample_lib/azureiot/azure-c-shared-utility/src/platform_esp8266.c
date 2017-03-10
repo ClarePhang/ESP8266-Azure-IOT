@@ -12,16 +12,30 @@
 #include "lwip/apps/sntp.h"
 #include "lwip/apps/sntp_time.h"
 
-int platform_init(void)
+#define SNTP_TIME_TO_WAIT   2000    //time to wait after each SNTP request
+#define SNTP_SERVERS_NUM    2       //number of SNTP servers in the list
+
+const char * ntp_servers[] = {      //list of SNTP servers to go through
+        "pool.ntp.org",
+        "time.nist.gov"
+};
+
+int ICACHE_FLASH_ATTR platform_init(void)
 {
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_init();
-    u32_t ts = 0;
+    u8_t current_server = 0;
+    u32_t ts = sntp_get_current_timestamp();
     while(ts == 0){
-        vTaskDelay(5000 / portTICK_RATE_MS);
+        os_printf("SNTP: trying server[%u] %s \n", current_server, ntp_servers[current_server]);
+        sntp_setservername(0, (char *)(ntp_servers[current_server]));
+        sntp_init();
+        vTaskDelay(SNTP_TIME_TO_WAIT / portTICK_RATE_MS);
         ts = sntp_get_current_timestamp();
-        LogInfo("%s", sntp_get_real_time(ts));
+        if(!ts){
+            os_printf("SNTP: could not get the time from %s.\n", ntp_servers[current_server]);
+            current_server = (current_server + 1) % SNTP_SERVERS_NUM;
+        }
     }
+    os_printf("SNTP: got the time: %s\n", sntp_get_real_time(ts));
     return 0;
 }
 
@@ -30,7 +44,7 @@ const IO_INTERFACE_DESCRIPTION* platform_get_default_tlsio(void)
     return tlsio_openssl_get_interface_description();
 }
 
-void platform_deinit(void)
+void ICACHE_FLASH_ATTR platform_deinit(void)
 {
      sntp_stop();
 }

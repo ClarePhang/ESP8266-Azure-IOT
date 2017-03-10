@@ -23,7 +23,7 @@
 #define DUPLICATE_FLAG_MASK             0x8
 #define CONNECT_PACKET_MASK             0xf0
 #define TIME_MAX_BUFFER                 16
-#define DEFAULT_MAX_PING_RESPONSE_TIME  80  // % of time to send pings
+#define DEFAULT_MAX_PING_RESPONSE_TIME  10  // % of time to send pings
 #define MAX_CLOSE_RETRIES               10
 
 static const char* TRUE_CONST = "true";
